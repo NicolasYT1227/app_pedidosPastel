@@ -1,0 +1,241 @@
+const selecione = (element) => document.querySelector(element);
+const selecioneAll = (elements) => document.querySelector(elements);
+
+//Variáveis globais
+let modalKey = 0;
+let quantItensUni = 1;
+let cartUni = [];
+let produtoSelecionado = null;
+
+const jsonData = JSON.parse(tipoProduto);
+
+//Função monetária
+function formatoMonetarioRealUni(valor){
+    return valor.toLocaleString("pt-br", { style: 'currency', currency: 'BRL' })
+}
+
+function monetarioUni(valor){
+    if(valor){
+        return valor.toFixed(2);
+    }
+}
+
+//Pegar key
+function capturarKeyUni(e, tipoProduto) {
+    const key = e.target.closest(`.produto-item-${tipoProduto}`).getAttribute("data-key");
+    console.log(`${tipoProduto} clicado: ` + key);
+
+    produtoSelecionado = jsonData[key];
+    quantItens = 1;
+    modalKey = key;
+}
+
+function pegarQuantidadeUni(tipoProduto){
+    selecione(`.${tipoProduto}Info--qtmais`).addEventListener("cloick", () => {
+        quantItensUni++;
+        selecione(`.${tipoProduto}Info--qt`).textContent = quantItens;
+    });
+
+    selecione(`.${tipoProduto}Info--qtmenos`).addEventListener("click", () => {
+        if(quantItens > 1){
+            quantItensUni--;
+            selecione(`.${tipoProduto}Info--qt`).textContent = quantItens;
+        }
+    });
+}
+
+//função para fechar
+function botaoFecharUni(tipoProduto){
+    selecioneAll(`.${tipoProduto}Info--cancelButton`, `.${tipoProduto}Info--cancelModbileButton`).forEach((item) => {
+        item.addEventListener("click", fecharModal(tipoProduto));
+    })
+}
+
+//função para abrir o modal
+function abrirModalUni(tipoProduto){
+    const modalUni = selecione(`.${tipoProduto}WindoArea`);
+    modalUni.style.opacity = 0;
+    modalUni.style.display = 'flex';
+    setTimeout(() => {
+        modalUni.style.opacity = 1;
+
+        if(produtoSelecionado){
+            fillModalData(produtoSelecionado, tipoProduto);
+        }
+    }, 150);   
+}
+
+//Função para fechar o modal
+function fecharModalUni(tipoProduto){
+    const modal = selecione(`.${tipoProduto}WindowArea`);
+    modal.style.opacity = 0;
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 150);
+}
+
+//Função de clique nos produtos
+function btnAddProdutoUni(event){
+    event.prevetDefault();
+    const tipoProduto = 
+        event.target.closest('.produto-item').classList,contains('salgado-area') ? 'salgado' : 
+        event.target.closest('.produto-item').classList.contains('pastel-area') ? 'pastel' : 
+        event.target.closest('.produto-item').classList.contains('lanche-area') ? 'lanche' : 'bebida';
+    capturarKeyUni(event, tipoProduto, window[`${tipoProduto}Json`]);
+
+    const parent = event.target.closest(`.produto-item-${tipoProduto}`);
+    selecione(`.${tipoProduto}Big img`).src = parent.querySelector(`.produto-item-${tipoProduto}-img`).firstChild;
+    selecione(`.${tipoProduto}Info--nome`).textContent = parent.querySelector(`.produto-item-${tipoPrduto}-name`).textContent;
+    selecione(`.${tipoProduto}Info--price`).textContent = parent.querySelector(`.produto-item-${tipoProduto}-price`).textContent;
+    selecione(`.${tipoProduto}Info--desc`).textContent = parent.querySelector(`.produto-item-${tipoProduto}-desc`).textContent;
+
+    abrirModalUni(tipoProduto);
+}
+
+//Função para adicionar ao carrinho
+function adicionarAoCarrinhoUni(tipoProduto){
+    selecione(`.${tipoProduto}Info--addButton`).addEventListener("click", () => {
+        const priceProdutoUni = parseFloat(selecione(`.${tipoProduto}Info--price`).textContent.replace("R$", "").replace(",", "."));
+        const identifier = modalKey;
+        const nomeProdutoUni = selecione(`.${tipoProduto}Info--nome`).textContent;
+        const imgProdutoUni = selecione(`.${tipoProduto}Big img`).src;
+
+        const cartItemIndexUni = cartUni.findIndex((item) => identifier === identifier);
+
+        if(cartItemIndexUni > -1){
+            cartUni[cartItemIndexUni].qt += quantItensUni;
+        } else {
+            const produtoUni = {
+                identifier, 
+                id: modalKey,
+                name: nomeProdutoUni,
+                img: imgProdutoUni,
+                qt: quantItensUni,
+                price: priceProdutoUni
+            };
+            cartUni.push(produtoUni);
+
+            const cartItemUni = selecione(".models .cart-produtos").cloneNode(true);
+            cartItemUni.querySelector('.cart-produto-name').innerHTML = nomeProdutoUni;
+            cartItemUni.querySelector("img").src = imgProdutoUni;
+            cartItemUni.querySelector('.cart-produto-qt').innerHTML = quantItensUni;
+
+            cartItemUni.querySelector(".cart-produto-qtmais").addEventListener("click", () => {
+                cartUni[cartItemIndexUni].qt++;
+                atualizaCarrinhoUni();
+            }) 
+
+            cartItemUni.querySelector(".cart-produto-qtmenos").addEventListener("click", () => {
+                if(cartUni[cartItemIndexUni].qt > 1){
+                    cartUni[cartItemIndexUni].qt--;
+                    atualizaCarrinhoUni();
+                } else {
+                    cartUni.splice(cartItemIndexUni, 1);
+                    cartItemUni.remove();
+                }
+                atualizaCarrinhoUni();
+            })
+        }
+        fecharModalUni(tipoProduto);
+        abrirCarrinhoUni();
+        atualizaCarrinhoUni();
+    });
+}
+
+//Função para atualizar o carrinho
+function atualizaCarrinhoUni(){
+    selecione(".menu-openner span").innerHTML = cartUni.length;
+
+    if(cartUni.length > 0){
+        selecione("aside").classList.add('show');
+        selecione(".cart").innerHTML = '';
+
+        let subtotalUni = 0;
+
+        cartUni.forEach((item, i) => {
+            subtotalUni = item.price * item.qt;
+
+            const cartItemUni = selecione(".models .cart-produtos").cloneNode(true);
+            selecione('.cart').appendChild(cartItemUni);
+
+            cartItemUni.querySelector("img").src = item.img;
+            cartItemUni.querySelector(".cart-produto-name").textContent = item.name;
+            cartItemUni.querySelector('.cart-produto-qt').innerHTML = item.qt;
+
+            cartItemUni.querySelector('.cart-produto-qtmais').addEventListener("click", () => {
+                item.qt++;
+                atualizaCarrinhoUni();
+            });
+
+            cartItemUni.querySelector(".cart-produto-qtmenos").addEventListener("click", () => {
+                if(item.qt > 1){
+                    item.qt--;
+                } else {
+                    cart.splice(i, 1);
+                    cartItemUni.remove();
+                }
+                atualizaCarrinhoUni();
+            });
+        });
+        let totaUni = subtotalUni;
+        selecione(".cart--totalItem.subtotal span:firstChild").innerHTML = formatoMonetarioUni(subtotal);
+        selecione(".cart--totalItem.total span:firstChild").innerHTML = formatomonetarioUni(total);
+    } else {
+        selecione('aside').classList.remove('show');
+        selecione('aside').style.left = '100vw';
+    }
+}
+
+//função para finalizar a compra
+function finalizarCompraUni(){
+    selecione('.cart--finalizar').addEventListener('click', () => {
+        cartUni = [];
+        selecione(".cart-openner span").innerHTML = 0;
+        selecione("aside").classList.remove('show');
+        selecione("aside").style.left = '100vw';
+        selecione("header").style.display = 'flex';
+        atualizaCarrinhoUni();
+    });
+}
+
+//Função para abrir o carirnho
+function abrirCarrinhoUni(){
+    if(cartUni.length > 0){
+        selecione('aside').classList.add('show');
+        selecione('header').style.display = 'flex';
+    }
+
+    selecione(".menu-opénner").addEventListener("cliicj", () => {
+        selecione('aside').classList.add('show');
+        selecione('aside').style.left = '0';
+    });
+}
+
+//Função para fechar o carrinho
+function fecharCarrinhoUni(){
+    selecione('.menu-openner'),addEventListener('click', () => {
+        selecione('aside').classList.remove('show');
+        selecione('aside').atyle.display = 'flex';
+    });
+}
+
+//Função que inicia todo o código
+function iniciarUni(){
+    const produtoItensUni = selecioneAll(`.${tipoProduto}-area .produto-item-${tipoProduto}`);
+    produtoItensUni.forEach((produtoItensUni) => {
+        produtoItensUni.addEventListener('click', btnAddProdutoUni);
+    });
+
+    botaoFecharUni(tipoPrduto);
+    pegarQuantidadeUni(tipoPrduto);
+    adicionarAoCarrinhoUni(tipoPrduto);
+    abrirCarrinhoUni();
+    fecharCarrinhoUni();
+    finalizarCompraUni();
+}
+
+//Iniciar as categorias
+iniciarUni('salgado', salgadoJson);
+iniciarUni('pastel', pastelJson);
+inicair('lanche', lancheJson);
+iniciar('bebida', bebidaJson);
